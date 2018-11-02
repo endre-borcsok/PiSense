@@ -9,7 +9,7 @@ import Adafruit_DHT
 import MySQLdb
 
 db = MySQLdb.connect("localhost", "monitor", "password", "temps")
-curs=db.cursor()
+curs = db.cursor()
 app = Flask(__name__)
 
 sensor_args = { '11': Adafruit_DHT.DHT11,
@@ -27,7 +27,7 @@ def readSensor():
 	humidity, temperature = Adafruit_DHT.read_retry(sensor, pin)
 	if humidity is not None and temperature is not None:
 		addTempToDb('living-room', temperature, humidity)
-		return 'Temp={0:0.1f}*  Humidity={1:0.1f}%'.format(temperature, humidity)
+		return getRecentTempData()
 	else:
 	    return 'Failed to get reading. Try again!'
 
@@ -40,11 +40,16 @@ def runTemperatureMonitor():
 	print(readSensor())
 	threading.Timer(30, runTemperatureMonitor).start()
 
+def getRecentTempData():
+	curs.execute("SELECT * FROM tempdat LIMIT 1")
+	data = curs.fetchall()
+	return "Temperature: %s C, Humidity: %s %%" % (data[0][3], data[0][4])
+
 @app.route("/")
 def hello():
-	reading = readSensor()
+	reading = getRecentTempData()
 	print reading
-	html = '<h3>' + reading + '!</h3>' + '<b>Hostname:</b> {hostname}<br/>'
+	html = '<h3>' + reading + '</h3>' + '<b>Hostname:</b> {hostname}<br/>'
 	return html.format(name=os.getenv("NAME", "world"), hostname=socket.gethostname(), visits=0)
 
 if __name__ == "__main__":
