@@ -2,8 +2,14 @@ from flask import Flask
 import sys
 import os
 import socket
+import time
+import threading
+from threading import Thread
 import Adafruit_DHT
+import MySQLdb
 
+db = MySQLdb.connect("localhost", "monitor", "password", "temps")
+curs=db.cursor()
 app = Flask(__name__)
 
 sensor_args = { '11': Adafruit_DHT.DHT11,
@@ -20,10 +26,19 @@ else:
 def readSensor():
 	humidity, temperature = Adafruit_DHT.read_retry(sensor, pin)
 	if humidity is not None and temperature is not None:
-	    return 'Temp={0:0.1f}*  Humidity={1:0.1f}%'.format(temperature, humidity)
+		addTempToDb('living-room', temperature, humidity)
+		return 'Temp={0:0.1f}*  Humidity={1:0.1f}%'.format(temperature, humidity)
 	else:
-	    print('Failed to get reading. Try again!')
-	    return ''
+	    return 'Failed to get reading. Try again!'
+
+def addTempToDb(location, temp, humidity):
+	 curs.execute ("INSERT INTO tempdat values(CURRENT_DATE() - INTERVAL 1 DAY, NOW(), %s, %s, %s)", (location, temp, humidity))
+	 db.commit()
+
+def runTemperatureMonitor():
+	print(time.ctime())
+	print(readSensor())
+	threading.Timer(30, runTemperatureMonitor).start()
 
 @app.route("/")
 def hello():
@@ -33,4 +48,7 @@ def hello():
 	return html.format(name=os.getenv("NAME", "world"), hostname=socket.gethostname(), visits=0)
 
 if __name__ == "__main__":
+	thread = Thread(target = runTemperatureMonitor)
+	thread.start()
+	thread.join()
 	app.run(host='0.0.0.0', port=80)
