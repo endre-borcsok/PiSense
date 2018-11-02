@@ -32,7 +32,7 @@ def readSensor():
 	    return 'Failed to get reading. Try again!'
 
 def addTempToDb(location, temp, humidity):
-	 curs.execute ("INSERT INTO tempdat values(CURRENT_DATE() - INTERVAL 1 DAY, NOW(), %s, %s, %s)", (location, temp, humidity))
+	 curs.execute ("INSERT INTO tempdat values(CURRENT_DATE(), NOW(), %s, %s, %s)", (location, temp, humidity))
 	 db.commit()
 
 def runTemperatureMonitor():
@@ -41,9 +41,9 @@ def runTemperatureMonitor():
 	threading.Timer(30, runTemperatureMonitor).start()
 
 def getRecentTempData():
-	curs.execute("SELECT * FROM tempdat LIMIT 1")
+	curs.execute("SELECT * FROM tempdat WHERE tdate=CURRENT_DATE() ORDER BY ttime DESC LIMIT 1")
 	data = curs.fetchall()
-	return "Temperature: %s C, Humidity: %s %%" % (data[0][3], data[0][4])
+	return "Date: %s, Time: %s, Location: %s, Temperature: %s C, Humidity: %s %%" % (data[0][0], data[0][1], data[0][2], data[0][3], data[0][4])
 
 @app.route("/")
 def hello():
