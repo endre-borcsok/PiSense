@@ -13,8 +13,8 @@ curs = db.cursor()
 app = Flask(__name__)
 
 sensor_args = { '11': Adafruit_DHT.DHT11,
-		        '22': Adafruit_DHT.DHT22,
-		        '2302': Adafruit_DHT.AM2302 }
+		'22': Adafruit_DHT.DHT22,
+		'2302': Adafruit_DHT.AM2302 }
 
 if len(sys.argv) == 3 and sys.argv[1] in sensor_args:
 	sensor = sensor_args[sys.argv[1]]
